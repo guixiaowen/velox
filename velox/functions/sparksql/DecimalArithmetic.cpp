@@ -685,6 +685,28 @@ std::vector<std::shared_ptr<exec::FunctionSignature>> decimalDivideSignature() {
           .build()};
 }
 
+std::vector<std::shared_ptr<exec::FunctionSignature>> decimalReturnLongDivideSignature() {
+   return {
+      exec::FunctionSignatureBuilder()
+          .integerVariable("a_precision")
+          .integerVariable("a_scale")
+          .integerVariable("b_precision")
+          .integerVariable("b_scale")
+          .integerVariable(
+              "r_precision",
+              "min(38, a_precision - a_scale + b_scale + max(6, a_scale + b_precision + 1))")
+          .integerVariable(
+              "r_scale",
+              getResultScale(
+                  "a_precision - a_scale + b_scale + max(6, a_scale + b_precision + 1)",
+                  "max(6, a_scale + b_precision + 1)"))
+          .returnType("LONG")
+          .argumentType("DECIMAL(a_precision, a_scale)")
+          .argumentType("DECIMAL(b_precision, b_scale)")
+          .build()};
+}
+
+
 template <typename Operation>
 std::shared_ptr<exec::VectorFunction> createDecimalFunction(
     const std::string& name,
@@ -798,5 +820,10 @@ VELOX_DECLARE_STATEFUL_VECTOR_FUNCTION(
 VELOX_DECLARE_STATEFUL_VECTOR_FUNCTION(
     udf_decimal_div,
     decimalDivideSignature(),
+    createDecimalFunction<Divide>);
+
+VELOX_DECLARE_STATEFUL_VECTOR_FUNCTION(
+    udf_decimal_return_long_div,
+    decimalReturnLongDivideSignature(),
     createDecimalFunction<Divide>);
 } // namespace facebook::velox::functions::sparksql
